@@ -1,59 +1,77 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Training Assessment Tracker
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Training Assessment Tracker is a Laravel and Vue application for recording a member's development plan from baseline assessment through weekly evidence to a final comparison. It is a deliberately scoped technical demonstration project, not a long-term HR platform.
 
-## About Laravel
+Administrators manage the skill catalogue, members, and development plans. Members can register and view only their own plan history, weekly progress, and baseline-to-final comparison.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## What it does
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Creates draft development plans with a scored baseline for every selected skill.
+- Enforces the plan lifecycle: `draft` -> `active` -> `completed`.
+- Records sequential weekly objectives, evidence, and outcome scores. Closed weeks and completed plans are immutable.
+- Calculates per-skill and average movement from baseline to final scores without storing a derived delta.
+- Preserves completed plan history and supports numbered follow-on cycles, while allowing only one unfinished cycle per member.
+- Supports administrator-only skill catalogue management, member search and identity corrections, and draft-plan direction changes.
+- Uses Laravel Sanctum bearer-token authentication, role/ownership policies, validated API requests, and Vue route protection.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Technology
 
-## Learning Laravel
+- Laravel 12 and PHP 8.2+
+- SQLite for local development and automated tests
+- Vue 3, Vue Router, Vite, and Vitest
+- Laravel Sanctum and Laravel Pint
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Roles
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Role | Capabilities |
+|---|---|
+| Administrator | Manages skills and members; creates and progresses plans for other members; records baselines, weekly entries, and final assessments. |
+| Member | Registers an account and reads only their own plans, weeks, and comparisons. |
 
-## Laravel Sponsors
+The frontend hides controls that are not relevant to a role, but the API policies and programme rules enforce permissions and state transitions.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Local setup
 
-### Premium Partners
+Requirements: PHP 8.2+, Composer, Node.js/npm, and the PHP SQLite extension.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```powershell
+composer install
+Copy-Item .env.example .env
+php artisan key:generate
+New-Item -ItemType File -Path database/database.sqlite -Force
+php artisan migrate --seed
+npm ci
+npm run build
+php artisan serve
+```
 
-## Contributing
+Open `http://127.0.0.1:8000`. For frontend development, run `npm run dev` in a second terminal.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The local seed administrator is `admin@example.test` with password `password`. These credentials are only for a disposable local database; never use them in a deployed environment.
 
-## Code of Conduct
+Do not run `migrate:fresh` against a database that contains work you need to retain.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Verification
 
-## Security Vulnerabilities
+```powershell
+php artisan test
+npm test
+npm run test:ui
+npm run build
+php vendor/bin/pint --test
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+The automated suite covers authentication, role and ownership rules, state transitions, atomic writes and rollback, repeat cycles, API error handling, and Vue loading, validation, duplicate-submission, and read-only states.
 
-## License
+For an end-to-end review, follow [FULL-CYCLE-VERIFY.md](FULL-CYCLE-VERIFY.md).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Design boundaries
+
+- A skill is retired, not deleted, so historical assessment records remain intact.
+- Baseline rows define plan membership. A skill cannot be planned without a baseline score in the current model.
+- The local demo stores bearer tokens in `sessionStorage` so a session survives refreshes within a tab. A production first-party deployment should instead use Sanctum HttpOnly cookies, CSRF protection, HTTPS, and a reviewed content-security policy.
+- Application rules are enforced through policies and services; privileged direct database writes can bypass those rules.
+
+## Further reading
+
+[TECHNICAL-NOTES.md](TECHNICAL-NOTES.md) documents the schema, API, integrity rules, comparison calculation, and deliberate exclusions.
